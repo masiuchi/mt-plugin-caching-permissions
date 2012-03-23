@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use base qw( MT::Plugin );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $NAME    = ( split /::/, __PACKAGE__ )[-1];
 
 my $plugin = __PACKAGE__->new({
@@ -25,7 +25,7 @@ if ( $MT::VERSION >= 5.1 ) {
     no warnings 'redefine';
     my %cached_perms;
     *MT::Permission::perms_from_registry = sub {
-        if ( defined %cached_perms ) {
+        if ( %cached_perms ) {
             return \%cached_perms;
         }
         my $regs  = MT::Component->registry('permissions');
