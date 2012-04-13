@@ -1,4 +1,4 @@
-package CachePerms::L10N;
+package CachingPermissions::L10N;
 use strict;
 use warnings;
 use base qw( MT::Plugin::L10N );

@@ -1,7 +1,9 @@
-package MT::Plugin::CachePerms;
+package MT::Plugin::CachingPermissions;
 use strict;
 use warnings;
 use base qw( MT::Plugin );
+
+return 1 if $MT::VERSION < 5.1;
 
 our $VERSION = '0.02';
 our $NAME    = ( split /::/, __PACKAGE__ )[-1];
@@ -14,24 +16,29 @@ my $plugin = __PACKAGE__->new({
     version     => $VERSION,
     author_name => 'masiuchi',
     author_link => 'https://github.com/masiuchi/',
-    plugin_link => 'https://github.com/masiuchi/mt-plugin-cache-perms/',
+    plugin_link => 'https://github.com/masiuchi/mt-plugin-caching-permissions/',
     description => '<__trans phrase="Overwrite MT::Permission::perms_from_registry() for having cache when using MT 5.1 or later.">',
+    registry    => {
+        callbacks => {
+            init_request => &_init_request,
+        },
+    },
 });
 MT->add_plugin( $plugin );
 
-if ( $MT::VERSION >= 5.1 ) {
+{
+    my %Cache;
+    sub _init_request { %Cache = () }
+
     require MT::Component;
     require MT::Permission;
     no warnings 'redefine';
-    my %cached_perms;
     *MT::Permission::perms_from_registry = sub {
-        if ( %cached_perms ) {
-            return \%cached_perms;
-        }
+        return \%Cache if %Cache;
         my $regs  = MT::Component->registry('permissions');
         my %keys  = map { $_ => 1 } map { keys %$_ } @$regs;
         my %perms = map { $_ => MT->registry( 'permissions' => $_ ) } keys %keys;
-        %cached_perms = %perms;
+        %Cache    = %perms;
         \%perms;
     };
 }

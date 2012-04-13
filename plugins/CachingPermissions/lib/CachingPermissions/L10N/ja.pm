@@ -1,7 +1,7 @@
-package CachePerms::L10N::ja;
+package CachingPermissions::L10N::ja;
 use strict;
 use warnings;
-use base qw( CachePerms::L10N );
+use base qw( CachingPermissions::L10N );
 
 our %Lexicon = (
     'Overwrite MT::Permission::perms_from_registry() for having cache when using MT 5.1 or later.'
