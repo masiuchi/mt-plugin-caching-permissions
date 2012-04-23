@@ -3,9 +3,7 @@ use strict;
 use warnings;
 use base qw( MT::Plugin );
 
-return 1 if $MT::VERSION < 5.1;
-
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $NAME    = ( split /::/, __PACKAGE__ )[-1];
 
 my $plugin = __PACKAGE__->new({
@@ -18,29 +16,40 @@ my $plugin = __PACKAGE__->new({
     author_link => 'https://github.com/masiuchi/',
     plugin_link => 'https://github.com/masiuchi/mt-plugin-caching-permissions/',
     description => '<__trans phrase="Overwrite MT::Permission::perms_from_registry() for having cache when using MT 5.1 or later.">',
-    registry    => {
-        callbacks => {
-            init_request => &_init_request,
-        },
-    },
 });
 MT->add_plugin( $plugin );
 
-{
-    my %Cache;
-    sub _init_request { %Cache = () }
+if ( $MT::VERSION >= 5.1 ) {
+    my $key = 'cachingpermssions:perms';
+    my $overwritten;
 
-    require MT::Component;
-    require MT::Permission;
-    no warnings 'redefine';
-    *MT::Permission::perms_from_registry = sub {
-        return \%Cache if %Cache;
-        my $regs  = MT::Component->registry('permissions');
-        my %keys  = map { $_ => 1 } map { keys %$_ } @$regs;
-        my %perms = map { $_ => MT->registry( 'permissions' => $_ ) } keys %keys;
-        %Cache    = %perms;
-        \%perms;
-    };
+    sub init_registry {
+        my ( $p ) = @_;
+        $p->registry({
+            init_app => \&_init_app,
+        });
+    }
+
+    sub _init_app {
+        unless ( $overwritten ) {
+            require MT::Permission;
+            my $org = \&MT::Permission::perms_from_registry;
+
+            require MT::Request;
+            no warnings 'redefine';
+            *MT::Permission::perms_from_registry = sub {
+                my $req   = MT::Request->instance();
+                my $cache = $req->cache( $key );
+                unless ( $cache && %$cache ) {
+                    my %perms = %{ $org->() };
+                    $req->cache( $key, \%perms );
+                }
+                return $req->cache( $key );
+            };
+
+            $overwritten = 1;
+        }
+    }
 }
 
 1;
