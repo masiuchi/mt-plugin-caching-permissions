@@ -20,7 +20,7 @@ my $plugin = __PACKAGE__->new({
 MT->add_plugin( $plugin );
 
 if ( $MT::VERSION >= 5.1 ) {
-    my $key = 'cachingpermssions:perms';
+    my $key = 'cachingpermissions:perms';
     my $overwritten;
 
     sub init_registry {
