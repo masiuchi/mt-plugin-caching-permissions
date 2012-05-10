@@ -6,7 +6,7 @@ use base qw( MT::Plugin );
 use MT::Permission;
 use MT::Request;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 our $NAME    = ( split /::/, __PACKAGE__ )[-1];
 
 my $plugin = __PACKAGE__->new({
