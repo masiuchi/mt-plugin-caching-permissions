@@ -3,6 +3,9 @@ use strict;
 use warnings;
 use base qw( MT::Plugin );
 
+use MT::Permission;
+use MT::Request;
+
 our $VERSION = '0.03';
 our $NAME    = ( split /::/, __PACKAGE__ )[-1];
 
@@ -15,27 +18,25 @@ my $plugin = __PACKAGE__->new({
     author_name => 'masiuchi',
     author_link => 'https://github.com/masiuchi/',
     plugin_link => 'https://github.com/masiuchi/mt-plugin-caching-permissions/',
-    description => '<__trans phrase="Overwrite MT::Permission::perms_from_registry() for having cache when using MT 5.1 or later.">',
+    description => '<__trans phrase="Accelerate Movable Type interface for caching permmision registry.">',
 });
 MT->add_plugin( $plugin );
 
-if ( $MT::VERSION >= 5.1 ) {
-    my $key = 'cachingpermissions:perms';
-    my $overwritten;
+my $key = 'cachingpermissions:perms';
+my $overwritten;
 
-    sub init_registry {
-        my ( $p ) = @_;
-        $p->registry({
-            init_app => \&_init_app,
-        });
-    }
+sub init_registry {
+    my ( $p ) = @_;
+    $p->registry({
+        init_app => \&_init_app,
+    });
+}
 
-    sub _init_app {
-        unless ( $overwritten ) {
-            require MT::Permission;
+sub _init_app {
+    unless ( $overwritten ) {
+        if ( $MT::VERSION >= 5.1 ) {
             my $org = \&MT::Permission::perms_from_registry;
 
-            require MT::Request;
             no warnings 'redefine';
             *MT::Permission::perms_from_registry = sub {
                 my $req   = MT::Request->instance();
@@ -46,9 +47,28 @@ if ( $MT::VERSION >= 5.1 ) {
                 }
                 return $req->cache( $key );
             };
+        } else {
+            my $org = \&MT::Permission::_confirm_action;
 
-            $overwritten = 1;
+            no warnings 'redefine';
+            *MT::Permission::_confirm_action = sub {
+                my ( $pkg, $perm_name, $action, $permissions ) = @_;
+
+                if ( !$permissions ) {
+                    my $req = MT::Request->instance();
+                    my $cache = $req->cache( $key );
+                    unless ( $cache && %$cache ) {
+                        my %perms = %{ MT->registry( 'permissions' ) };
+                        $req->cache( $key, \%perms );
+                    }
+                    $permissions = $req->cache( $key );
+                }
+
+                return $org->( $pkg, $perm_name, $action, $permissions );
+            };
         }
+
+        $overwritten = 1;
     }
 }
 

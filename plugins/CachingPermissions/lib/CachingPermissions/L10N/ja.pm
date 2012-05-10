@@ -4,8 +4,8 @@ use warnings;
 use base qw( CachingPermissions::L10N );
 
 our %Lexicon = (
-    'Overwrite MT::Permission::perms_from_registry() for having cache when using MT 5.1 or later.'
-        => 'MT 5.1 以降使用時に、MT::Permission::perms_from_registry() がキャッシュを持つように書き換えます。',
+    "Accelerate Movable Type interface for caching permmision registry."
+        => "権限レジストリをキャッシュして、管理画面を高速化します。",
 );
 
 1;
